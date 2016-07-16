@@ -17,6 +17,15 @@ defaults
     timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
     timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
 
+listen stats
+        bind *:8080
+        stats enable
+        stats uri /
+        stats hide-version
+        stats realm   HAProxy Statistics
+        stats auth    {{ or (env "HAPROXY_STATS_USER") "admin" }}:{{ or (env "HAPROXY_STATS_USER") "admin" }}
+
+
 ### HTTP(S) frontend ###
 frontend www
     bind *:80
@@ -30,32 +39,17 @@ frontend www
 
     # Generated automatically by consul-template
 {{ range services }}
+{{if .Tags | contains "external"}}
     acl host_{{ .Name }} hdr_beg(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }}
     use_backend {{ .Name }}_backend if host_{{ .Name }}
 {{ end }}
-
-{{ if env "HAPROXY_STATS" }}
-frontend stats
-    bind *:1936
-    mode http
-    use_backend stats
 {{ end }}
-
 
 ### Consul-configured backend services ###
 {{ range services }}
+{{if .Tags | contains "external"}}
 backend {{ .Name }}_backend
 {{ range service .Name }}
    server {{ .Node }}-{{ .Port }} {{ .Address }}:{{ .Port }}{{ end }}
 {{ end }}
-
-{{ if env "HAPROXY_STATS" }}
-
-backend stats
-    stats enable
-    stats hide-version
-    stats refresh 5s
-    stats scope .
-    stats realm {{ or (env "HAPROXY_STATS_TITLE") "Haproxy Statistics" }}
-    stats uri {{ or (env "HAPROXY_STATS_URI") "/" }}
 {{ end }}
