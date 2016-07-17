@@ -1,3 +1,6 @@
+userlist admin_group
+	user {{ or (env "HAPROXY_ADMIN_USER") "admin" }} insecure-password {{ or (env "HAPROXY_ADMIN_PASS") "admin" }}
+
 global
     maxconn {{or (key "service/haproxy/maxconn") 256}}
     debug
@@ -88,6 +91,11 @@ frontend www
 {{if .Tags | contains "external"}}
 backend {{ .Name }}_backend
 {{ range service .Name }}
-   server {{ .Node }}-{{ .Port }} {{ .Address }}:{{ .Port }}{{ end }}
+   server {{ .Node }}-{{ .Port }} {{ .Address }}:{{ .Port }}
+   {{if .Tags | contains "admin"}}
+   acl admin_acl http_auth(admin_group)
+   http-request auth realm joseba.io if !admin_acl
+   {{ end }}
+{{ end }}
 {{ end }}
 {{ end }}
