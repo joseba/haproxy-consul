@@ -23,7 +23,7 @@ listen stats
         stats uri /
         stats hide-version
         stats realm   HAProxy Statistics
-        stats auth    {{ or (env "HAPROXY_STATS_USER") "admin" }}:{{ or (env "HAPROXY_STATS_USER") "admin" }}
+        stats auth    {{ or (env "HAPROXY_STATS_USER") "admin" }}:{{ or (env "HAPROXY_STATS_PASS") "admin" }}
 
 
 ### HTTP(S) frontend ###
